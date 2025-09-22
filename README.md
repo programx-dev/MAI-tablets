@@ -26,24 +26,6 @@ backend/
 └── gateway_service/           # API Gateway
     └── (аналогично, минимальные роутеры)```
 
-## Структура одного из микросервиса
-
-```
-patient_service/
-├── main.py                   # запускает FastAPI
-├── Dockerfile
-├── pyproject.toml            # списки зависимостей через Poetry
-├── app/
-│   ├── api/                  # роутеры (например, patient_router.py)
-│   ├── core/                 # config.py, constants.py
-│   ├── db/                   # database.py (создание сессии SQLAlchemy)
-│   ├── models/               # models.py с ORM-моделями
-│   ├── schemas/              # pydantic_schemas.py
-│   ├── services/             # business_logic.py
-│   └── utils/                # вспомогательные функции
-└── tests/                    # pytest-тесты
-```
-
 ## Getting started
 
 To make it easy for you to get started with GitLab, here's a list of recommended next steps.
