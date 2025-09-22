@@ -3,27 +3,26 @@
 ## Структура папок
 
 ```
-├── docker-compose.yml        # описывает все сервисы (базы, брокер, nginx)
-├── .env.template             # образец окружения для развёртывания
-├── gateway_service/          # API-шлюз (FastAPI)
-│   ├── main.py              # точка входа
-│   ├── app/                 
-│   │   ├── api/             # маршрутизаторы (routers) 
-│   │   ├── core/            # конфигурация, константы
-│   │   ├── models/          # SQLAlchemy-модели (если нужны)
-│   │   ├── schemas/         # Pydantic-схемы
-│   │   └── ...  
-│   ├── Dockerfile
-│   ├── pyproject.toml       # зависимости (Poetry)
-│   └── tests/               # тесты pytest (опционально)
-├── auth_service/             # сервис авторизации (FastAPI)
-│   └── (аналогичная структура: main.py, app/api, core, models, schemas, services и т.д.)
-├── patients_service/         # сервис пациентов (работа с рецептами и историей)
-│   └── (аналогично, с модулями работы с БД приёмов)
-├── notifications_service/    # сервис уведомлений (FastAPI + Celery tasks)
-│   └── (основной код напоминаний и обмен с брокером)
+├── docker-compose.yml         # Поднимает все сервисы + БД + брокер
+├── .env              # Переменные окружения
 ├── common/                   # (опционально) общие модули/утилиты для сервисов
-└── requirements/             # (опционально) зависимости
+├── auth_service/              # Сервис авторизации
+│   ├── main.py                # Точка входа FastAPI
+│   ├── app/
+│   │   ├── api/               # Роутеры (эндпоинты)
+│   │   ├── core/              # Конфиги, константы
+│   │   ├── models/            # ORM-модели SQLAlchemy
+│   │   ├── schemas/           # Pydantic-схемы
+│   │   ├── services/          # Бизнес-логика, работа с БД
+│   │   └── utils/             # Вспомогательные функции
+│   ├── Dockerfile
+│   └── tests/                 # Тесты pytest
+├── patients_service/          # Сервис пациентов
+│   └── (аналогично auth_service)
+├── notifications_service/     # Сервис уведомлений
+│   └── (аналогично auth_service)
+└── gateway_service/           # API Gateway
+    └── (аналогично, минимальные роутеры)
 ```
 
 ## Структура одного из микросервиса
