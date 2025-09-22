@@ -24,7 +24,8 @@ backend/
 ├── notifications_service/     # Сервис уведомлений
 │   └── (аналогично auth_service)
 └── gateway_service/           # API Gateway
-    └── (аналогично, минимальные роутеры)```
+    └── (аналогично, минимальные роутеры)
+```
 
 ## Getting started
 
