@@ -1,6 +1,48 @@
 # meds-reminder-backend
 
+## Структура папок
 
+```
+├── docker-compose.yml        # описывает все сервисы (базы, брокер, nginx)
+├── .env.template             # образец окружения для развёртывания
+├── gateway_service/          # API-шлюз (FastAPI)
+│   ├── main.py              # точка входа
+│   ├── app/                 
+│   │   ├── api/             # маршрутизаторы (routers) 
+│   │   ├── core/            # конфигурация, константы
+│   │   ├── models/          # SQLAlchemy-модели (если нужны)
+│   │   ├── schemas/         # Pydantic-схемы
+│   │   └── ...  
+│   ├── Dockerfile
+│   ├── pyproject.toml       # зависимости (Poetry)
+│   └── tests/               # тесты pytest (опционально)
+├── auth_service/             # сервис авторизации (FastAPI)
+│   └── (аналогичная структура: main.py, app/api, core, models, schemas, services и т.д.)
+├── patients_service/         # сервис пациентов (работа с рецептами и историей)
+│   └── (аналогично, с модулями работы с БД приёмов)
+├── notifications_service/    # сервис уведомлений (FastAPI + Celery tasks)
+│   └── (основной код напоминаний и обмен с брокером)
+├── common/                   # (опционально) общие модули/утилиты для сервисов
+└── requirements/             # (опционально) зависимости
+```
+
+## Структура одного из микросервиса
+
+```
+patient_service/
+├── main.py                   # запускает FastAPI
+├── Dockerfile
+├── pyproject.toml            # списки зависимостей через Poetry
+├── app/
+│   ├── api/                  # роутеры (например, patient_router.py)
+│   ├── core/                 # config.py, constants.py
+│   ├── db/                   # database.py (создание сессии SQLAlchemy)
+│   ├── models/               # models.py с ORM-моделями
+│   ├── schemas/              # pydantic_schemas.py
+│   ├── services/             # business_logic.py
+│   └── utils/                # вспомогательные функции
+└── tests/                    # pytest-тесты
+```
 
 ## Getting started
 
