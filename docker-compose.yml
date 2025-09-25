@@ -1,0 +1,9 @@
+services:
+  backend:
+    build: ./backend   # ← Здесь Dockerfile берётся из ./backend/
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/medication_db
+    depends_on:
+      - db
