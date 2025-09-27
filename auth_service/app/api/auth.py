@@ -1,6 +1,5 @@
-from uuid import UUID
 from fastapi import APIRouter
-from app.schemas.auth import UserResponse, UserLogin, UserRole
+from app.schemas.auth import UserLogin
 from app.services.user_service import create_user
 
 

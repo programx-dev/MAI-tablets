@@ -8,4 +8,7 @@ def create_user():
         role=UserRole.patient,
     )
     
-    return user
+    return {
+        'success': True,
+        'user': user
+        }
