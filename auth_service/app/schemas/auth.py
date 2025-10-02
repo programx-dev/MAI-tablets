@@ -1,25 +1,29 @@
-from pydantic import BaseModel
-from uuid import UUID
-from datetime import datetime, timezone
+from pydantic import BaseModel, Field
+from datetime import datetime
 from enum import Enum
 
 
 class UserRole(str, Enum):
-    '''Перечисление возможных ролей пользователеей'''
     patient = "patient"
     guardian = "guardian"
 
- 
+
+class UserRegister(BaseModel):
+    role: UserRole = Field(..., description="Role of user")
+
+
 class UserResponse(BaseModel):
-    '''Схема для выдачи информации о зарегистрированном пользователе'''
-    uuid: UUID
-    pswd: str
+    uuid: str
     role: UserRole
-    created_at: datetime = datetime.now(timezone.utc)
+    password: str
+    created_at: datetime
 
 
 class UserLogin(BaseModel):
-    '''Схема для входа (логина) пользователя'''
-    uuid: UUID
-    pswd: str
+    uuid: str
+    password: str
     role: UserRole
+
+
+class LoginResponse(BaseModel):
+    success: bool
