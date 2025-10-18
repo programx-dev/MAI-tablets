@@ -3,15 +3,11 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from app.api.auth import router as auth_router
-from app.db.session import db_helper
-from app.db.base import Base
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # создаём таблицы при старте
-    async with db_helper.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield
     # можно добавить логику при завершении
 

@@ -209,3 +209,5 @@ __marimo__/
 # Added by ProgrammP
 
 *.db
+auth_service/.trash/base.py
+auth_service/.trash/db_helper.py
