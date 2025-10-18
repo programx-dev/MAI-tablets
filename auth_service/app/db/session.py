@@ -41,6 +41,6 @@ class DatabaseSession:
 
 
 db_helper = DatabaseSession(
-    url=settings.DATABASE_URL,
-    echo=settings.DATABASE_ECHO,
+    url=settings.db.url,
+    echo=settings.db.echo,
 )
