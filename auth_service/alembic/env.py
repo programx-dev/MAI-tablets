@@ -19,7 +19,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-from app.db.base import Base
+from app.models.base import Base
 from app.core.config import settings
 from app.models import user
 

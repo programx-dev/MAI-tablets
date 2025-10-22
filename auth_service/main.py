@@ -7,9 +7,7 @@ from app.api.auth import router as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # создаём таблицы при старте
     yield
-    # можно добавить логику при завершении
 
 
 app = FastAPI(lifespan=lifespan)

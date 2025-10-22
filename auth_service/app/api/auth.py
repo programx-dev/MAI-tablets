@@ -1,26 +1,30 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import get_current_user
 from app.db.session import db_helper
-from app.schemas.auth import UserRegister, UserResponse, UserLogin, LoginResponse
-from app.crud.user import create_user, authenticate_user
-from app.schemas.auth import UserRole
+from app.models.user import User
+from app.schemas.auth import RegisterResponse, LoginResponse
+from app.crud.user import create_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_in: UserRegister, db: AsyncSession = Depends(db_helper.session_dependency)):
-    user, raw_password = await create_user(db, user_in.role)
-    return UserResponse(
+@router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
+async def register(db: AsyncSession = Depends(db_helper.session_dependency)):
+    user, raw_password = await create_user(db)
+    return RegisterResponse(
         uuid=user.uuid,
-        role=UserRole(user.role),
         password=raw_password,
-        created_at=user.created_at,
+        created_at=user.created_at
     )
 
 
-@router.post("/login", response_model=LoginResponse)
-async def login(user_in: UserLogin, db: AsyncSession = Depends(db_helper.session_dependency)):
-    success = await authenticate_user(db, user_in.uuid, user_in.password, user_in.role)
-    return LoginResponse(success=success)
+@router.get("/login", response_model=LoginResponse)
+async def login(current_user: User = Depends(get_current_user)):
+    return LoginResponse(
+        uuid=current_user.uuid,
+        created_at=current_user.created_at
+    )
