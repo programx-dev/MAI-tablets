@@ -40,3 +40,51 @@ docker-compose down
 ```bash
 docker-compose down -v
 ```
+
+## Дерево проекта
+```
+meds-reminder-backend
+├── .env
+├── .git
+├── .gitignore
+├── .venv
+├── Dockerfile
+├── README.md
+├── app
+│   ├── __pycache__
+│   ├── auth
+│   │   ├── ERADME.md
+│   │   ├── api
+│   │   │   ├── __pycache__
+│   │   │   ├── auth.py
+│   │   │   └── friend.py
+│   │   ├── crud
+│   │   │   ├── __pycache__
+│   │   │   ├── friend.py
+│   │   │   └── user.py
+│   │   ├── models
+│   │   │   ├── __pycache__
+│   │   │   └── user.py
+│   │   ├── schemas
+│   │   │   ├── __pycache__
+│   │   │   ├── auth.py
+│   │   │   └── friend.py
+│   │   └── utils
+│   │       ├── __pycache__
+│   │       └── password.py
+│   ├── core
+│   │   ├── __pycache__
+│   │   ├── config.py
+│   │   └── security.py
+│   ├── db
+│   │   ├── __pycache__
+│   │   ├── base.py
+│   │   └── session.py
+│   ├── main.py
+│   └── medicines
+│       └── README.md
+├── docker-compose.yml
+├── init.sql
+├── poetry.lock
+└── pyproject.toml
+```

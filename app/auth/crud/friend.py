@@ -80,3 +80,49 @@ async def get_patient(db: AsyncSession, friend_uuid: str):
         return {"uuid": patient.uuid, "message": None}
     else:
         return {"uuid": None, "message": "No patient assigned to this med friend"}
+    
+async def get_patient_for_current_friend(db: AsyncSession, friend_id: int):
+    """
+    Находит пациента, у которого relation_id равно friend_id (то есть текущий пользователь - мед-друг).
+    """
+    # Найти пациента, у которого relation_id == friend_id
+    stmt = select(User).where(User.relation_id == friend_id)
+    result = await db.execute(stmt)
+    patient = result.scalar_one_or_none()
+
+    if patient:
+        return {"uuid": patient.uuid, "message": None}
+    else:
+        return {"uuid": None, "message": "No patient assigned to this med friend"}
+    
+# --- Новая функция ---
+async def get_patient_id_by_friend_uuid(db: AsyncSession, friend_uuid: str) -> int | None:
+    """
+    Находит id пациента, у которого relation_id равно id пользователя с заданным friend_uuid.
+    """
+    # Найти пользователя (мед-друга) с таким uuid
+    friend_user = await db.execute(select(User).where(User.uuid == friend_uuid))
+    friend_user = friend_user.scalar_one_or_none()
+
+    if not friend_user:
+        return None
+
+    # Найти пациента, у которого relation_id == id мед-друга
+    stmt = select(User.id).where(User.relation_id == friend_user.id) # Выбираем только id
+    result = await db.execute(stmt)
+    patient_id = result.scalar_one_or_none() # scalar_one_or_none возвращает значение столбца, т.е. int или None
+
+    # Теперь patient_id - это int или None
+    return patient_id
+
+async def get_patient_id_for_current_friend(db: AsyncSession, friend_id: int) -> int | None:
+    """
+    Находит id пациента, у которого relation_id равно friend_id (то есть текущий пользователь - мед-друг).
+    """
+    # Найти пациента, у которого relation_id == friend_id
+    stmt = select(User.id).where(User.relation_id == friend_id)
+    result = await db.execute(stmt)
+    patient_id = result.scalar_one_or_none() # scalar_one_or_none возвращает значение столбца, т.е. int или None
+
+    # Теперь patient_id - это int или None
+    return patient_id
