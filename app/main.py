@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.auth.db.session import db_helper
+from app.db.session import db_helper
 from app.auth.models.base import Base
 
 

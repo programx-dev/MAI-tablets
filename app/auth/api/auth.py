@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.core.security import get_current_user
+from app.core.security import get_current_user
 from app.auth.crud.user import create_user
-from app.auth.db.session import db_helper
+from app.db.session import db_helper
 from app.auth.models.user import User
 from app.auth.schemas.auth import UserCreateResponse, UserLoginResponse
 

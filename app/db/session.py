@@ -1,7 +1,7 @@
 from asyncio import current_task
 from typing import AsyncGenerator, Any
 
-from app.auth.core.config import settings
+from app.core.config import settings
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_scoped_session,

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.db.session import db_helper
+from app.db.session import db_helper
 from app.auth.models.user import User
-from app.auth.core.security import get_current_user
+from app.core.security import get_current_user
 from app.auth.crud.friend import add_med_friend, remove_med_friend, get_med_friend, get_patient
 from app.auth.schemas.friend import FriendAdd, FriendAddResponse, FriendGetResponse, PatientGetResponse
 

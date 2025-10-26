@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.auth.db.session import db_helper
+from app.db.session import db_helper
 from app.auth.crud.user import get_user_by_uuid
 from app.auth.models.user import User
 from app.auth.utils.password import verify_password
