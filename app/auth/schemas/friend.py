@@ -1,9 +1,11 @@
+# app/auth/schemas/friend.py
+
 from pydantic import BaseModel
 
-class FriendAdd(BaseModel):
-    uuid: str
+class FriendAddByCode(BaseModel):
+    code: str
 
-class FriendAddResponse(BaseModel):
+class FriendActionResponse(BaseModel):
     success: bool
     message: str
 
@@ -14,3 +16,7 @@ class FriendGetResponse(BaseModel):
 class PatientGetResponse(BaseModel):
     uuid: str | None
     message: str | None = None
+
+class InvitationCodeGenerateResponse(BaseModel):
+    code: str
+    expires_in_seconds: int
