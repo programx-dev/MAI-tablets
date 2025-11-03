@@ -30,7 +30,7 @@ async def generate_invitation(
 ):
     """Сгенерировать уникальный временный код-приглашение (для мед-друга)."""
     try:
-        code, lifetime = await invitation_service.create_invitation(db, current_user.id)
+        code, lifetime = await invitation_service.create_invitation(db, current_user.uuid)
         return InvitationCodeGenerateResponse(code=code, expires_in_seconds=lifetime)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -17,7 +17,7 @@ class MedicationCreateRequest(BaseModel):
 
 class MedicationResponse(BaseModel):
     id: int
-    patient_id: int
+    patient_id: str
     name: str
     form: Optional[str]
     instructions: Optional[str]

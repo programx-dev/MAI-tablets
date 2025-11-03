@@ -15,7 +15,7 @@ async def _generate_unique_simple_code(db: AsyncSession) -> str:
         if not await crud_invitation.code_exists(db, code):
             return code
 
-async def create_invitation(db: AsyncSession, med_friend_id: int) -> tuple[str, int]:
+async def create_invitation(db: AsyncSession, med_friend_id: str) -> tuple[str, int]:
     """
     Создает код-приглашение для мед-друга.
     Возвращает кортеж (код, время жизни в секундах).
