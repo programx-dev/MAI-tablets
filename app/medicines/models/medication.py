@@ -11,7 +11,7 @@ class Medication(Base):
     __tablename__ = "medications"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
-    patient_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    patient_id: Mapped[int] = mapped_column(String, ForeignKey("users.uuid"), nullable=False)
 
     name: Mapped[str] = mapped_column(Text, nullable=False)
     form: Mapped[str] = mapped_column(Text, nullable=False)  # 'tablet', 'drop', 'spray', 'other'

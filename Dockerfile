@@ -14,6 +14,7 @@ RUN pip install fastapi
 RUN pip install uvicorn
 RUN pip install asyncpg
 RUN poetry config virtualenvs.create false
+RUN pip install greenlet
 RUN poetry install --no-root
 COPY . /code
 

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 import asyncio
 import os
-
+import greenlet
 from app.db.base import Base
 
 # Получаем URL из переменной окружения (обязательно!)
