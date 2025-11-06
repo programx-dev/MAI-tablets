@@ -13,3 +13,4 @@ class InvitationCode(Base):
     med_friend_id: Mapped[str] = mapped_column(String, ForeignKey("users.uuid"), nullable=False)
     expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
     is_used: Mapped[bool] = mapped_column(Boolean, default=False) # Оставляем на случай, если захотим аналитику
+    

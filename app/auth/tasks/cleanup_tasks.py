@@ -1,42 +1,58 @@
 # app/auth/tasks/cleanup_tasks.py
-
 import datetime
 import logging
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models.invitation import InvitationCode
+from app.medicines.models.intake import IntakeHistory
+from app.medicines.models.medication import Medication
 from app.db.session import db_helper
 
-# Настраиваем простой логгер для вывода информации о работе задачи
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def cleanup_expired_codes():
+async def cleanup_old_data():
     """
-    Находит и удаляет все просроченные и/или использованные коды-приглашения.
+    Ежедневная очистка данных:
+    - Удаляет просроченные/использованные коды-приглашения
+    - Удаляет IntakeHistory и Medication старше 60 дней (2 месяца)
     """
-    logger.info("Запуск фоновой задачи: очистка кодов-приглашений...")
-    
-    # Создаем асинхронную сессию БД специально для этой задачи
-    async with db_helper.session_factory() as session:
+    logger.info("🧹 Запуск ежедневной очистки данных...")
+
+    async with db_helper.session_factory() as session: 
         try:
-            now = datetime.datetime.utcnow()
-            
-            # Определяем условие для удаления: код либо использован, либо его срок истек
-            stmt = delete(InvitationCode).where(
+            now = datetime.datetime.now(datetime.timezone.utc)
+
+            # 1. Очистка кодов (как было)
+            stmt_codes = delete(InvitationCode).where(
                 (InvitationCode.is_used == True) | (InvitationCode.expires_at < now)
             )
-            
-            result = await session.execute(stmt)
+            result_codes = await session.execute(stmt_codes)
+
+            # 2. Очистка истории приёма (>60 дней)
+            two_months_ago = now - datetime.timedelta(days=60)
+            stmt_intake = delete(IntakeHistory).where(
+                IntakeHistory.created_at < two_months_ago
+            )
+            result_intake = await session.execute(stmt_intake)
+
+            # 3. Очистка рецептов/лекарств (>60 дней)
+            stmt_meds = delete(Medication).where(
+                Medication.created_at < two_months_ago
+            )
+            result_meds = await session.execute(stmt_meds)
+
             await session.commit()
-            
-            # result.rowcount содержит количество удаленных строк
-            if result.rowcount > 0:
-                logger.info(f"Задача очистки завершена. Удалено кодов: {result.rowcount}.")
-            else:
-                logger.info("Задача очистки завершена. Просроченных кодов не найдено.")
+
+            logger.info(
+                f"✅ Очистка завершена:\n"
+                f"   — Коды: {result_codes.rowcount}\n"
+                f"   — История приёма: {result_intake.rowcount}\n"
+                f"   — Рецепты: {result_meds.rowcount}"
+            )
 
         except Exception as e:
-            logger.error(f"Ошибка во время выполнения задачи очистки кодов: {e}")
+            logger.error(f"❌ Ошибка в cleanup_old_data: {e}")
             await session.rollback()
+            raise

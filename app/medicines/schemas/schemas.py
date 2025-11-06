@@ -1,6 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import date, time, datetime
 from typing import List, Optional
+from zoneinfo import ZoneInfo
+
+# --- Общая валидация UTC ---
+
+def ensure_utc(v):
+    if v is None:
+        return v
+    if isinstance(v, str):
+        v = datetime.fromisoformat(v)
+    if v.tzinfo is None:
+        v = v.replace(tzinfo=ZoneInfo("UTC"))
+    return v.astimezone(ZoneInfo("UTC"))
 
 # --- Medications ---
 
@@ -37,8 +49,13 @@ class IntakeHistoryCreateRequest(BaseModel):
     medication_id: int
     scheduled_time: datetime
     taken_time: Optional[datetime] = None
-    status: str # 'taken', 'skipped'
+    status: str
     notes: Optional[str] = None
+
+    @field_validator("scheduled_time", "taken_time", mode="before")
+    @classmethod
+    def validate_time(cls, v):
+        return ensure_utc(v)
 
 class IntakeHistoryUpdateRequest(BaseModel):
     taken_time: Optional[datetime] = None
@@ -49,7 +66,7 @@ class IntakeHistoryResponse(BaseModel):
     id: int
     medication_id: int
     scheduled_time: datetime
-    taken_time: Optional[datetime]
+    taken_time: datetime
     status: str
     notes: Optional[str]
 
