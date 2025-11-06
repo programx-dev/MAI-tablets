@@ -18,7 +18,7 @@ async def add_medication(
     current_user: User = Depends(get_current_user), # Пациент (current_user) добавляет препарат
 ):
     """Добавить препарат для текущего пользователя (пациента)"""
-    medication = await create_medication(db, current_user.id, data.model_dump())
+    medication = await create_medication(db, current_user.uuid, data.model_dump())
     return medication
 
 @router.get("/get_medications_for_current_friend") # Изменим путь
@@ -29,7 +29,7 @@ async def get_medications_for_current_friend(
 ):
     """Получить все препараты пациента, для которого текущий пользователь является мед-другом"""
     # 1. Найти id пациента по id текущего мед-друга
-    patient_id = await get_patient_id_for_current_friend(db, current_user.id) # Передаём id мед-друга
+    patient_id = await get_patient_id_for_current_friend(db, current_user.uuid) # Передаём id мед-друга
 
     if not patient_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found for this med friend")

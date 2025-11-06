@@ -22,7 +22,7 @@ async def add_or_update_intake(
     """Добавить или обновить запись о приеме лекарства"""
     # Проверим, принадлежит ли медикамент пользователю
     stmt = select(Medication).where(
-        and_(Medication.id == data.medication_id, Medication.patient_id == current_user.id)
+        and_(Medication.id == data.medication_id, Medication.patient_id == current_user.uuid)
     )
     result = await db.execute(stmt)
     medication = result.scalar_one_or_none()
@@ -41,7 +41,7 @@ async def get_intakes_for_current_friend(
 ):
     """Получить всю историю приемов пациента, для которого текущий пользователь является мед-другом"""
     # 1. Найти id пациента по id текущего мед-друга
-    patient_id = await get_patient_id_for_current_friend(db, current_user.id) # Передаём id мед-друга
+    patient_id = await get_patient_id_for_current_friend(db, current_user.uuid) # Передаём id мед-друга
 
     if not patient_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found for this med friend")

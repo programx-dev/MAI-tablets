@@ -1,11 +1,14 @@
+from pydantic import BaseModel
 from datetime import datetime
-from pydantic import BaseModel, field_validator
-from zoneinfo import ZoneInfo
+
+class UserCreateRequest(BaseModel):
+    username: str  # ← Добавьте это
+    password: str  # если нужно — можно оставить как raw_password
 
 
 class UserCreateResponse(BaseModel):
     uuid: str
-    password: str
+    password: str  # ⚠️ Возвращать пароль — плохо, но если так задумано...
 
     class Config:
         from_attributes = True
@@ -19,8 +22,8 @@ class UserLoginRequest(BaseModel):
 class UserLoginResponse(BaseModel):
     success: bool
     uuid: str
-    username: str  
-    last_synced_time: datetime | None  # 
+    username: str  # ✅ Добавьте, если возвращаете
+    last_synced_time: datetime | None  # ✅ если добавляли
 
     class Config:
         from_attributes = True

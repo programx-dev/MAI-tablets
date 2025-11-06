@@ -1,6 +1,6 @@
 # app/auth/services/friend_service.py
 
-import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.models.user import User
 from app.auth.crud import invitation as crud_invitation
@@ -21,7 +21,7 @@ async def add_friend_by_code(db: AsyncSession, patient: User, code: str) -> None
         raise FriendServiceError("Неверный код-приглашение.")
 
     # Если код просрочен, удаляем его и сообщаем об ошибке
-    if invitation.expires_at < datetime.datetime.utcnow():
+    if invitation.expires_at < datetime.now(timezone.utc):
         await crud_invitation.delete_invitation_code_db(db, invitation.id)
         raise FriendServiceError("Срок действия кода-приглашения истек.")
 
@@ -30,7 +30,7 @@ async def add_friend_by_code(db: AsyncSession, patient: User, code: str) -> None
     
     med_friend_id = invitation.med_friend_id
 
-    if med_friend_id == patient.id:
+    if med_friend_id == patient.uuid:  # ✅ patient.id → patient.uuid
         raise FriendServiceError("Вы не можете добавить себя в качестве мед-друга.")
     
     if patient.relation_id is not None:
@@ -53,7 +53,7 @@ async def remove_friend_for_patient(db: AsyncSession, patient: User) -> None:
 
 async def unsubscribe_from_patient(db: AsyncSession, med_friend: User) -> None:
     """Мед-друг отписывается от своего пациента."""
-    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.id)
+    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid)  # ✅ med_friend.id → med_friend.uuid
     if not patient:
         raise FriendServiceError("Вы не привязаны ни к одному пациенту.")
     await crud_friend.update_patient_relation(db, patient, None)
@@ -75,7 +75,7 @@ async def get_med_friend_info(db: AsyncSession, patient: User) -> dict[str, str 
 
 async def get_patient_info_for_friend(db: AsyncSession, med_friend: User) -> dict[str, str | None]:
     """Готовит данные о пациенте для ответа API."""
-    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.id)
+    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid)  # ✅ med_friend.id → med_friend.uuid
     if patient:
         return {"uuid": patient.uuid, "message": None}
     else:
