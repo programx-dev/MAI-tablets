@@ -11,13 +11,14 @@ from app.auth.schemas.auth import UserCreateRequest, UserCreateResponse
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post(
-    "/register", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserCreateResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    user_data: UserCreateRequest,  # ✅ Принимаем данные из тела
+    user_data: UserCreateRequest,
     db: AsyncSession = Depends(db_helper.session_dependency)
 ):
-    user, raw_password = await create_user(db, username=user_data.username)  # передаём username
-
-    return UserCreateResponse(uuid=user.uuid, password=raw_password)
+    user, raw_password = await create_user(db, username=user_data.username)
+    return UserCreateResponse(
+        uuid=user.uuid,
+        username=user.username,
+        password=raw_password  # ✅ Возвращаем сгенерированный пароль
+    )

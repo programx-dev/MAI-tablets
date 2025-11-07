@@ -11,10 +11,12 @@ class FriendActionResponse(BaseModel):
 
 class FriendGetResponse(BaseModel):
     uuid: str | None
+    username: str | None
     message: str | None = None
 
 class PatientGetResponse(BaseModel):
     uuid: str | None
+    username: str | None
     message: str | None = None
 
 class InvitationCodeGenerateResponse(BaseModel):

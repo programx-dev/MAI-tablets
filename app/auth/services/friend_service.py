@@ -62,21 +62,21 @@ async def get_med_friend_info(db: AsyncSession, patient: User) -> dict[str, str 
     """Готовит данные о мед-друге для ответа API."""
     # Находим мед-друга по ID, сохраненному у пациента
     if not patient.relation_id:
-        return {"uuid": None, "message": "Мед-друг не назначен."}
+        return {"uuid": None, "username": None, "message": "Мед-друг не назначен."}
     
     # db.get() - это самый эффективный способ получить объект по primary key
     friend = await db.get(User, patient.relation_id)
     
     if friend:
-        return {"uuid": friend.uuid, "message": None}
+        return {"uuid": friend.uuid, "username": friend.username, "message": None}
     else:
         # Такая ситуация маловероятна, но лучше ее обработать
-        return {"uuid": None, "message": "Назначенный мед-друг не найден в системе."}
+        return {"uuid": None, "username": None, "message": "Назначенный мед-друг не найден в системе."}
 
 async def get_patient_info_for_friend(db: AsyncSession, med_friend: User) -> dict[str, str | None]:
     """Готовит данные о пациенте для ответа API."""
     patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid)  # ✅ med_friend.id → med_friend.uuid
     if patient:
-        return {"uuid": patient.uuid, "message": None}
+        return {"uuid": patient.uuid, "username": patient.username, "message": None}
     else:
-        return {"uuid": None, "message": "Пациент не назначен."}
+        return {"uuid": None, "username": None, "message": "Пациент не назначен."}

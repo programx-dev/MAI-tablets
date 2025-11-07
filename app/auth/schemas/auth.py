@@ -3,11 +3,11 @@ from datetime import datetime
 
 class UserCreateRequest(BaseModel):
     username: str  # ← Добавьте это
-    password: str  # если нужно — можно оставить как raw_password
 
 
 class UserCreateResponse(BaseModel):
     uuid: str
+    username: str
     password: str  # ⚠️ Возвращать пароль — плохо, но если так задумано...
 
     class Config:
