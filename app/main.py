@@ -1,3 +1,5 @@
+# app/main.py
+
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -10,6 +12,7 @@ from app.auth.api.auth import router as auth_router
 from app.auth.api.friend import router as friend_router
 from app.medicines.api.medication import router as medication_router
 from app.medicines.api.intake import router as intake_router
+from app.medicines.api.sync import router as sync_router  # ✅ Импортируем новый роутер
 
 
 @asynccontextmanager
@@ -40,6 +43,7 @@ app.include_router(auth_router)
 app.include_router(friend_router)
 app.include_router(medication_router)
 app.include_router(intake_router)
+app.include_router(sync_router)  # ✅ Добавляем новый роутер синхронизации
 
 
 @app.get("/")
