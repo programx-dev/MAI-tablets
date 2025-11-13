@@ -1,3 +1,4 @@
+# app/medicines/models/medication.py
 from datetime import date, time, datetime
 from typing import List, Optional
 from sqlalchemy import (
@@ -5,7 +6,7 @@ from sqlalchemy import (
     Integer, CheckConstraint, ARRAY, ForeignKey, TIMESTAMP
 )
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func  # <-- Убедитесь, что этот импорт есть
 from app.db.base import Base
 
 
@@ -30,6 +31,13 @@ class Medication(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now()
+    )
+
+    # ✅ Добавляем updated_at
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()  # <-- Это ключевое: обновляется при UPDATE
     )
 
     __table_args__ = (

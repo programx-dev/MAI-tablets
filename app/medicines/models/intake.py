@@ -1,8 +1,9 @@
+# app/medicines/models/intake.py
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import BigInteger, Text, TIMESTAMP, ForeignKey, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func  # <-- Убедитесь, что этот импорт есть
 from app.db.base import Base
 
 
@@ -23,6 +24,13 @@ class IntakeHistory(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now()
+    )
+
+    # ✅ Добавляем updated_at
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()  # <-- Это ключевое: обновляется при UPDATE
     )
 
     __table_args__ = (
