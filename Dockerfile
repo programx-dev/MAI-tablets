@@ -15,6 +15,7 @@ RUN pip install uvicorn
 RUN pip install asyncpg
 RUN poetry config virtualenvs.create false
 RUN pip install greenlet
+RUN pip install alembic
 RUN poetry install --no-root
 COPY . /code
 
