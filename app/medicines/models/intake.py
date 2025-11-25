@@ -26,12 +26,6 @@ class IntakeHistory(Base):
         server_default=func.now()
     )
 
-    # ✅ Добавляем updated_at
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now()  # <-- Это ключевое: обновляется при UPDATE
-    )
 
     __table_args__ = (
         CheckConstraint("status IN ('taken', 'skipped')", name='valid_status'),
