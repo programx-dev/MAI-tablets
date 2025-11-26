@@ -49,3 +49,4 @@ async def get_intakes_for_current_friend(
     # 2. Получить историю приемов пациента
     intakes = await get_intake_history_by_patient_id(db, patient_id)
     return intakes # Просто возвращаем список объектов ORM
+
