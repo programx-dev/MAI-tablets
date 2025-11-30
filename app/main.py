@@ -1,10 +1,9 @@
-# app/main.py
-
 import uvicorn
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # ← добавлен импорт
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
+import os
 
 from app.db.session import db_helper
 from app.core.scheduler import scheduler
@@ -37,19 +36,17 @@ async def lifespan(app: FastAPI):
     print("🛑 Планировщик остановлен.")
 
 
-# 🔹 Сначала создаём приложение
 app = FastAPI(lifespan=lifespan)
 
-# 🔹 Потом добавляем middleware
+# CORS для разработки с Expo Go
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:19006",           # Expo Web
-        "exp://192.168.31.174:19000",       # Expo Go (порт 19000 — стандартный для LAN)
-        "exp://192.168.31.174:8081",        # возможный альтернативный порт
-        "exp://192.168.31.174",             # общая маска
-        "http://192.168.31.174:8000",       # прямой вызов API из браузера
-        "*",                                # ← для разработки допустимо
+        "http://158.160.68.214:8000",  # ваш VPS
+        "http://localhost:19006",      # Expo Web
+        "http://localhost:8081",       # Expo Android emulator
+        "exp://127.0.0.1:19000",       # Expo Go local
+        "*",                           # Разрешить все для разработки
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -69,9 +66,15 @@ def read_root():
     return {"message": "Добро пожаловать в МАИ таблетки!"}
 
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",     
-        reload=True,
+        host="0.0.0.0",
+        port=8000,
+        reload=True  # ← Оставить для разработки
     )
