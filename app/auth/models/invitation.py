@@ -13,7 +13,7 @@ class InvitationCode(Base):
     id: Mapped[str] = mapped_column(
         String,
         primary_key=True,
-        default=lambda: str(uuid_pkg.uuid4())  # ✅ Автоматическая генерация
+        default=lambda: str(uuid_pkg.uuid4()) 
     )
     code: Mapped[str] = mapped_column(String, unique=True, index=True)
     med_friend_id: Mapped[str] = mapped_column(String, ForeignKey("users.uuid"), nullable=False)

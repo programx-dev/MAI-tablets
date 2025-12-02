@@ -6,7 +6,7 @@ from app.db.session import db_helper
 from app.auth.models.user import User
 from app.core.security import get_current_user
 from app.auth.services import invitation_service, friend_service
-from app.auth.crud import friend as crud_friend # Импортируем для GET-запросов
+from app.auth.crud import friend as crud_friend # 
 from app.auth.schemas.friend import (
     FriendAddByCode,
     FriendActionResponse,
@@ -17,7 +17,6 @@ from app.auth.schemas.friend import (
 
 router = APIRouter(prefix="/friends", tags=["friends"])
 
-# --- Эндпоинты для генерации и использования приглашений ---
 
 @router.post(
     "/invitation",
@@ -48,7 +47,6 @@ async def add_friend_by_invitation_code(
     except friend_service.FriendServiceError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-# --- Эндпоинты для удаления/отписки ---
 
 @router.delete("/remove-for-patient", response_model=FriendActionResponse)
 async def remove_friend_for_patient(
@@ -74,7 +72,6 @@ async def unsubscribe_from_patient(
     except friend_service.FriendServiceError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-# --- Эндпоинты для получения информации (GET) ---
 
 @router.get("/get-med-friend", response_model=FriendGetResponse)
 async def get_my_med_friend(

@@ -20,5 +20,5 @@ async def register(
     return UserCreateResponse(
         uuid=user.uuid,
         username=user.username,
-        password=raw_password  # ✅ Возвращаем сгенерированный пароль
+        password=raw_password  
     )

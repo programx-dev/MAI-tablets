@@ -19,7 +19,6 @@ async def update_patient_relation(db: AsyncSession, patient: User, friend_id: in
     patient.relation_id = friend_id
     await db.commit()
 
-# Вот ваша функция с новым, консистентным именем
 async def get_patient_id_for_current_friend(db: AsyncSession, friend_id: int) -> int | None:
     """Находит id пациента, у которого relation_id равно friend_id."""
     stmt = select(User.uuid).where(User.relation_id == friend_id)

@@ -11,16 +11,14 @@ from app.auth.crud.friend import get_patient_id_for_current_friend
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 
-# --- Intake History ---
 
 @router.post("/add_or_update", response_model=IntakeHistoryResponse)
 async def add_or_update_intake(
     data: IntakeHistoryCreateRequest,
     db: AsyncSession = Depends(db_helper.session_dependency),
-    current_user: User = Depends(get_current_user), # Пациент (current_user) добавляет/обновляет прием
+    current_user: User = Depends(get_current_user), 
 ):
     """Добавить или обновить запись о приеме лекарства"""
-    # Проверим, принадлежит ли медикамент пользователю
     stmt = select(Medication).where(
         and_(Medication.id == data.medication_id, Medication.patient_id == current_user.uuid)
     )
@@ -33,20 +31,17 @@ async def add_or_update_intake(
     intake = await create_or_update_intake_history(db, data.model_dump())
     return intake
 
-@router.get("/get_intakes_for_current_friend") # Изменим путь
+@router.get("/get_intakes_for_current_friend") 
 async def get_intakes_for_current_friend(
-    # friend_uuid: str, # Убираем этот параметр
     db: AsyncSession = Depends(db_helper.session_dependency),
-    current_user: User = Depends(get_current_user), # Это мед-друг
+    current_user: User = Depends(get_current_user), 
 ):
     """Получить всю историю приемов пациента, для которого текущий пользователь является мед-другом"""
-    # 1. Найти id пациента по id текущего мед-друга
     patient_id = await get_patient_id_for_current_friend(db, current_user.uuid) # Передаём id мед-друга
 
     if not patient_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found for this med friend")
 
-    # 2. Получить историю приемов пациента
     intakes = await get_intake_history_by_patient_id(db, patient_id)
-    return intakes # Просто возвращаем список объектов ORM
+    return intakes 
 

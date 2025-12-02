@@ -24,20 +24,17 @@ async def cleanup_old_data():
         try:
             now = datetime.datetime.now(datetime.timezone.utc)
 
-            # 1. Очистка кодов (как было)
             stmt_codes = delete(InvitationCode).where(
                 (InvitationCode.is_used == True) | (InvitationCode.expires_at < now)
             )
             result_codes = await session.execute(stmt_codes)
 
-            # 2. Очистка истории приёма (>60 дней)
             two_months_ago = now - datetime.timedelta(days=60)
             stmt_intake = delete(IntakeHistory).where(
                 IntakeHistory.created_at < two_months_ago
             )
             result_intake = await session.execute(stmt_intake)
 
-            # 3. Очистка рецептов/лекарств (>60 дней)
             stmt_meds = delete(Medication).where(
                 Medication.created_at < two_months_ago
             )
@@ -46,7 +43,7 @@ async def cleanup_old_data():
             await session.commit()
 
             logger.info(
-                f"✅ Очистка завершена:\n"
+                f" Очистка завершена:\n"
                 f"   — Коды: {result_codes.rowcount}\n"
                 f"   — История приёма: {result_intake.rowcount}\n"
                 f"   — Рецепты: {result_meds.rowcount}"

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.crud import invitation as crud_invitation
 from app.auth.crud import friend as crud_friend
 
-INVITATION_CODE_LIFETIME_SECONDS = 180  # 3 минуты
+INVITATION_CODE_LIFETIME_SECONDS = 180  
 
 async def _generate_unique_simple_code(db: AsyncSession) -> str:
     """Генерирует уникальный 6-значный числовой код."""
@@ -20,7 +20,6 @@ async def create_invitation(db: AsyncSession, med_friend_id: str) -> tuple[str, 
     Создает код-приглашение для мед-друга.
     Возвращает кортеж (код, время жизни в секундах).
     """
-    # Проверка, не является ли пользователь уже чьим-то мед-другом
     if await crud_friend.get_patient_by_friend_id(db, med_friend_id):
         raise ValueError("Вы уже являетесь мед-другом. Нельзя генерировать новые приглашения.")
 

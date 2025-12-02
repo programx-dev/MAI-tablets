@@ -16,28 +16,27 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
-# --- Модели для Push ---
 
 class ClientIntakeHistoryUpdate(BaseModel):
-    server_id: Optional[int] # ID на сервере. null, если новая запись.
-    medication_server_id: int # Обязательно: ID лекарства на сервере (для новой истории)
-    status: str # 'taken', 'skipped'
+    server_id: Optional[int] 
+    medication_server_id: int 
+    status: str 
     taken_time: datetime
     notes: Optional[str] = None
 
 
 class ClientMedicationUpdate(BaseModel):
-    server_id: Optional[int] # ID на сервере. null, если новое лекарство.
-    action: Literal["create", "update"] # Указывает, что делать
+    server_id: Optional[int] 
+    action: Literal["create", "update"] 
     name: str
-    form: str # 'tablet', 'drop', ...
+    form: str 
     instructions: Optional[str] = None
-    start_date: date # Используем date
-    end_date: Optional[date] = None # Используем date
-    schedule_type: str # 'daily', 'weekly_days', 'every_x_days'
-    week_days: Optional[List[int]] = None # Пример: [1, 3, 5]
+    start_date: date 
+    end_date: Optional[date] = None 
+    schedule_type: str 
+    week_days: Optional[List[int]] = None 
     interval_days: Optional[int] = None
-    times_per_day: List[str] # Пример: ["08:00", "20:00"]  # ← Pydantic принимает строки
+    times_per_day: List[str] 
 
 
 class PushSyncRequest(BaseModel):
@@ -45,7 +44,6 @@ class PushSyncRequest(BaseModel):
     intake_history: List[ClientIntakeHistoryUpdate] = []
 
 
-# --- Модели для Pull (без изменений) ---
 
 @router.get("/pull", response_model=dict)
 async def pull_sync(
@@ -56,7 +54,6 @@ async def pull_sync(
     """
     Выгрузка новых или изменённых данных с сервера.
     """
-    # --- Загрузка medications ---
     medications_query = select(Medication).where(
         Medication.patient_id == current_user.uuid
     )
@@ -66,7 +63,6 @@ async def pull_sync(
     medications_result = await db.execute(medications_query)
     medications = [MedicationResponse.from_orm(m) for m in medications_result.scalars().all()]
 
-    # --- Загрузка intake_history ---
     intake_history_query = select(IntakeHistory).join(Medication).where(
         Medication.patient_id == current_user.uuid
     )
@@ -96,14 +92,12 @@ async def push_sync(
         "intake_history": []
     }
 
-    # --- Обработка medications ---
     for idx, med in enumerate(data.medications):
         if med.action == "update":
             if med.server_id is None:
                 # Ошибка: нельзя обновить, если нет server_id
                 raise HTTPException(status_code=400, detail=f"Cannot update medication without server_id. Index: {idx}")
 
-            # Попытка обновить существующую запись
             stmt = select(Medication).where(
                 Medication.id == med.server_id,
                 Medication.patient_id == current_user.uuid # Защита от чужих данных
@@ -112,10 +106,8 @@ async def push_sync(
             existing_med = result.scalar_one_or_none()
 
             if existing_med:
-                # ✅ Преобразуем строки времени в объекты time перед обновлением
                 converted_times = [time.fromisoformat(t) for t in med.times_per_day]
 
-                # Обновляем поля
                 existing_med.name = med.name
                 existing_med.form = med.form
                 existing_med.instructions = med.instructions
@@ -124,8 +116,7 @@ async def push_sync(
                 existing_med.schedule_type = med.schedule_type
                 existing_med.week_days = med.week_days
                 existing_med.interval_days = med.interval_days
-                existing_med.times_per_day = converted_times # ✅ Используем преобразованный список
-                # updated_at обновится автоматически
+                existing_med.times_per_day = converted_times
                 await db.commit()
                 await db.refresh(existing_med)
                 response_data["medications"].append({"client_id": idx, "server_id": existing_med.id})
@@ -134,15 +125,12 @@ async def push_sync(
 
         elif med.action == "create":
             if med.server_id is not None:
-                # Ошибка: нельзя создать, если server_id указан
                 raise HTTPException(status_code=400, detail=f"Cannot create medication with existing server_id. Index: {idx}")
 
-            # ✅ Преобразуем строки времени в объекты time перед созданием
             converted_times = [time.fromisoformat(t) for t in med.times_per_day]
 
-            # Создание новой записи
             new_med = Medication(
-                patient_id=current_user.uuid, # Принадлежит текущему пользователю
+                patient_id=current_user.uuid, 
                 name=med.name,
                 form=med.form,
                 instructions=med.instructions,
@@ -151,20 +139,18 @@ async def push_sync(
                 schedule_type=med.schedule_type,
                 week_days=med.week_days,
                 interval_days=med.interval_days,
-                times_per_day=converted_times # ✅ Используем преобразованный список
+                times_per_day=converted_times 
             )
             db.add(new_med)
             await db.commit()
             await db.refresh(new_med)
             response_data["medications"].append({"client_id": idx, "server_id": new_med.id})
 
-    # --- Обработка intake_history (как и раньше) ---
     for idx, intake in enumerate(data.intake_history):
         if intake.server_id is not None:
-            # Обновление существующей записи
             stmt = select(IntakeHistory).join(Medication).where(
                 IntakeHistory.id == intake.server_id,
-                Medication.patient_id == current_user.uuid  # Защита от чужих данных
+                Medication.patient_id == current_user.uuid  
             )
             result = await db.execute(stmt)
             existing_intake = result.scalar_one_or_none()
@@ -180,8 +166,6 @@ async def push_sync(
             else:
                 raise HTTPException(status_code=404, detail=f"IntakeHistory with id {intake.server_id} not found or not owned by user. Index: {idx}")
         else:
-            # Создание новой записи
-            # Проверяем, что лекарство принадлежит пользователю
             med_stmt = select(Medication.id).where(
                 Medication.id == intake.medication_server_id,
                 Medication.patient_id == current_user.uuid
@@ -194,7 +178,7 @@ async def push_sync(
 
             new_intake = IntakeHistory(
                 medication_id=med_id,
-                scheduled_time=intake.taken_time,  # или null, если точное время неизвестно
+                scheduled_time=intake.taken_time, 
                 taken_time=intake.taken_time,
                 status=intake.status,
                 notes=intake.notes
@@ -204,7 +188,6 @@ async def push_sync(
             await db.refresh(new_intake)
             response_data["intake_history"].append({"client_id": idx, "server_id": new_intake.id})
 
-    # Обновляем last_synced_time пользователя
     current_user.last_synced_time = datetime.utcnow()
     await db.commit()
 

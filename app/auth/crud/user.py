@@ -6,14 +6,13 @@ from app.auth.models.user import User
 from app.auth.utils.password import hash_password
 
 
-async def create_user(db: AsyncSession, username: str) -> tuple[User, str]:  # ✅ Принимаем username
+async def create_user(db: AsyncSession, username: str) -> tuple[User, str]:  
     raw_password = secrets.token_urlsafe(8)
     hashed_password = hash_password(raw_password)
 
     user = User(
-        username=username,  # ✅ Передаём в модель
+        username=username,  
         hash_password=hashed_password
-        # relation_id = ...
     )
     db.add(user)
     await db.commit()

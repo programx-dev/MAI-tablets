@@ -6,7 +6,7 @@ from sqlalchemy import (
     Integer, CheckConstraint, ARRAY, ForeignKey, TIMESTAMP
 )
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func  # <-- Убедитесь, что этот импорт есть
+from sqlalchemy.sql import func  
 from app.db.base import Base
 
 

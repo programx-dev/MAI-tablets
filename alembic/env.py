@@ -7,18 +7,15 @@ import os
 import greenlet
 from app.db.base import Base
 
-# Получаем URL из переменной окружения (обязательно!)
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("Environment variable DATABASE_URL is required for Alembic")
 
 config = context.config
 
-# Настройка логгирования
 if config.config_file_name:
     fileConfig(config.config_file_name)
 
-# Устанавливаем URL в конфиг (для совместимости, хотя не используется напрямую)
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 target_metadata = Base.metadata
@@ -45,7 +42,6 @@ def do_run_migrations(connection):
 
 async def run_migrations_online():
     """Run migrations in 'online' mode."""
-    # Создаём асинхронный движок напрямую из DATABASE_URL
     connectable = create_async_engine(
         DATABASE_URL,
         poolclass=pool.NullPool,  # важно для Alembic — нет пула

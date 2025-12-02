@@ -9,7 +9,6 @@ from app.db.session import db_helper
 from app.core.scheduler import scheduler
 from app.auth.tasks.cleanup_tasks import cleanup_old_data
 
-# Роутеры
 from app.auth.api.auth import router as auth_router
 from app.auth.api.friend import router as friend_router
 from app.medicines.api.medication import router as medication_router
@@ -19,7 +18,6 @@ from app.medicines.api.sync import router as sync_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Запускаем ежедневную очистку (первый запуск через 1 мин после старта)
     scheduler.add_job(
         cleanup_old_data,
         "interval",
@@ -38,15 +36,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORS для разработки с Expo Go
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://158.160.68.214:8000",  # ваш VPS
-        "http://localhost:19006",      # Expo Web
-        "http://localhost:8081",       # Expo Android emulator
-        "exp://127.0.0.1:19000",       # Expo Go local
-        "*",                           # Разрешить все для разработки
+        "http://158.160.68.214:8000",  
+        "http://localhost:19006",      
+        "http://localhost:8081",       
+        "exp://127.0.0.1:19000",       
+        "*",                           
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -76,5 +73,5 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True  # ← Оставить для разработки
+
     )

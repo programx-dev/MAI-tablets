@@ -3,7 +3,6 @@ from datetime import date, time, datetime
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 
-# --- Общая валидация UTC ---
 
 def ensure_utc(v):
     if v is None:
@@ -14,7 +13,6 @@ def ensure_utc(v):
         v = v.replace(tzinfo=ZoneInfo("UTC"))
     return v.astimezone(ZoneInfo("UTC"))
 
-# --- Medications ---
 
 class MedicationCreateRequest(BaseModel):
     name: str
@@ -22,10 +20,10 @@ class MedicationCreateRequest(BaseModel):
     instructions: Optional[str] = None
     start_date: date
     end_date: Optional[date] = None
-    schedule_type: str # 'daily', 'weekly_days', 'every_x_days'
-    week_days: Optional[List[int]] = None # [1, 3, 5]
-    interval_days: Optional[int] = None # e.g., 3
-    times_per_day: List[time] # ['08:00', '14:30']
+    schedule_type: str 
+    week_days: Optional[List[int]] = None 
+    interval_days: Optional[int] = None 
+    times_per_day: List[time]
 
 class MedicationResponse(BaseModel):
     id: int
@@ -43,7 +41,6 @@ class MedicationResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- Intake History ---
 
 class IntakeHistoryCreateRequest(BaseModel):
     medication_id: int
@@ -59,7 +56,7 @@ class IntakeHistoryCreateRequest(BaseModel):
 
 class IntakeHistoryUpdateRequest(BaseModel):
     taken_time: Optional[datetime] = None
-    status: Optional[str] = None # 'taken', 'skipped'
+    status: Optional[str] = None 
     notes: Optional[str] = None
 
 class IntakeHistoryResponse(BaseModel):

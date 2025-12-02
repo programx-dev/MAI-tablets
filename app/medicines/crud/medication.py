@@ -25,7 +25,6 @@ async def get_medications_by_patient_id(
 async def delete_medication(
     db: AsyncSession, medication_id: int, patient_id: str
 ) -> bool:
-    # Проверяем, что препарат существует И принадлежит пациенту
     stmt = select(Medication).where(
         (Medication.id == medication_id) & (Medication.patient_id == patient_id)
     )
@@ -35,7 +34,6 @@ async def delete_medication(
     if not medication:
         return False
 
-    # Удаляем — intake_history удалится каскадно
     await db.execute(delete(Medication).where(Medication.id == medication_id))
     await db.commit()
     return True

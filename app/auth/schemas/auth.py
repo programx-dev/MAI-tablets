@@ -2,13 +2,13 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class UserCreateRequest(BaseModel):
-    username: str  # ← Добавьте это
+    username: str 
 
 
 class UserCreateResponse(BaseModel):
     uuid: str
     username: str
-    password: str  # ⚠️ Возвращать пароль — плохо, но если так задумано...
+    password: str  
 
     class Config:
         from_attributes = True
@@ -22,8 +22,8 @@ class UserLoginRequest(BaseModel):
 class UserLoginResponse(BaseModel):
     success: bool
     uuid: str
-    username: str  # ✅ Добавьте, если возвращаете
-    last_synced_time: datetime | None  # ✅ если добавляли
+    username: str  
+    last_synced_time: datetime | None 
 
     class Config:
         from_attributes = True

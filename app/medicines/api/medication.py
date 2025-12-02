@@ -58,10 +58,7 @@ async def delete_medication_endpoint(
     Удалить лекарство — ТОЛЬКО для пациента и ТОЛЬКО своё.
     Мед-друзья НЕ имеют права на удаление.
     """
-    # Явно запрещаем мед-друзьям (хотя security.get_current_user не различает роли,
-    # но если в будущем добавите role — можно будет проверить)
 
-    # Проверяем: принадлежит ли medication_id текущему пользователю (пациенту)?
     stmt = select(Medication).where(
         (Medication.id == medication_id) & (Medication.patient_id == current_user.uuid)
     )
@@ -74,10 +71,8 @@ async def delete_medication_endpoint(
             detail="Medication not found or does not belong to you"
         )
 
-    # Выполняем удаление
     success = await delete_medication(db, medication_id, current_user.uuid)
     if not success:
-        # На практике не должно происходить, т.к. мы уже проверили наличие
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Deletion failed"

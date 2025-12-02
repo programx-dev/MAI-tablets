@@ -20,7 +20,6 @@ async def add_friend_by_code(db: AsyncSession, patient: User, code: str) -> None
     if not invitation:
         raise FriendServiceError("Неверный код-приглашение.")
 
-    # Если код просрочен, удаляем его и сообщаем об ошибке
     if invitation.expires_at < datetime.now(timezone.utc):
         await crud_invitation.delete_invitation_code_db(db, invitation.id)
         raise FriendServiceError("Срок действия кода-приглашения истек.")
@@ -30,20 +29,18 @@ async def add_friend_by_code(db: AsyncSession, patient: User, code: str) -> None
     
     med_friend_id = invitation.med_friend_id
 
-    if med_friend_id == patient.uuid:  # ✅ patient.id → patient.uuid
+    if med_friend_id == patient.uuid: 
         raise FriendServiceError("Вы не можете добавить себя в качестве мед-друга.")
     
     if patient.relation_id is not None:
         raise FriendServiceError("У вас уже есть мед-друг. Сначала удалите текущего.")
 
-    # Проверяем, не занят ли уже этот мед-друг
     if await crud_friend.get_patient_by_friend_id(db, med_friend_id):
         raise FriendServiceError("Этот мед-друг уже закреплен за другим пациентом.")
 
-    # Все проверки пройдены: устанавливаем связь и помечаем код как использованный
     await crud_friend.update_patient_relation(db, patient, med_friend_id)
     invitation.is_used = True
-    await db.commit() # Коммитим изменение is_used
+    await db.commit() 
 
 async def remove_friend_for_patient(db: AsyncSession, patient: User) -> None:
     """Пациент удаляет своего мед-друга."""
@@ -53,29 +50,26 @@ async def remove_friend_for_patient(db: AsyncSession, patient: User) -> None:
 
 async def unsubscribe_from_patient(db: AsyncSession, med_friend: User) -> None:
     """Мед-друг отписывается от своего пациента."""
-    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid)  # ✅ med_friend.id → med_friend.uuid
+    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid)  
     if not patient:
         raise FriendServiceError("Вы не привязаны ни к одному пациенту.")
     await crud_friend.update_patient_relation(db, patient, None)
     
 async def get_med_friend_info(db: AsyncSession, patient: User) -> dict[str, str | None]:
     """Готовит данные о мед-друге для ответа API."""
-    # Находим мед-друга по ID, сохраненному у пациента
     if not patient.relation_id:
         return {"uuid": None, "username": None, "message": "Мед-друг не назначен."}
     
-    # db.get() - это самый эффективный способ получить объект по primary key
     friend = await db.get(User, patient.relation_id)
     
     if friend:
         return {"uuid": friend.uuid, "username": friend.username, "message": None}
     else:
-        # Такая ситуация маловероятна, но лучше ее обработать
         return {"uuid": None, "username": None, "message": "Назначенный мед-друг не найден в системе."}
 
 async def get_patient_info_for_friend(db: AsyncSession, med_friend: User) -> dict[str, str | None]:
     """Готовит данные о пациенте для ответа API."""
-    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid)  # ✅ med_friend.id → med_friend.uuid
+    patient = await crud_friend.get_patient_by_friend_id(db, med_friend.uuid) 
     if patient:
         return {"uuid": patient.uuid, "username": patient.username, "message": None}
     else:
