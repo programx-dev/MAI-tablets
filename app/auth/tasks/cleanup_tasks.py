@@ -18,7 +18,7 @@ async def cleanup_old_data():
     - Удаляет просроченные/использованные коды-приглашения
     - Удаляет IntakeHistory и Medication старше 60 дней (2 месяца)
     """
-    logger.info("🧹 Запуск ежедневной очистки данных...")
+    logger.info("Запуск ежедневной очистки данных...")
 
     async with db_helper.session_factory() as session: 
         try:
@@ -50,6 +50,6 @@ async def cleanup_old_data():
             )
 
         except Exception as e:
-            logger.error(f"❌ Ошибка в cleanup_old_data: {e}")
+            logger.error(f"Ошибка в cleanup_old_data: {e}")
             await session.rollback()
             raise
