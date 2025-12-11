@@ -1,6 +1,7 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
 import os
@@ -18,6 +19,16 @@ from app.medicines.api.sync import router as sync_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Контекстный менеджер для управления жизненным циклом приложения
+    """
+    print("🚀 Запуск приложения...")
+    
+    # Инициализация базы данных
+    await db_helper.init_db()
+    print("✅ База данных инициализирована")
+    
+    # Запуск планировщика задач
     scheduler.add_job(
         cleanup_old_data,
         "interval",
@@ -26,52 +37,270 @@ async def lifespan(app: FastAPI):
         next_run_time=datetime.now(timezone.utc) + timedelta(minutes=1),
     )
     scheduler.start()
-    print("✅ Планировщик запущен: daily_cleanup (ежедневно)")
-
-    yield
-
+    print("✅ Планировщик задач запущен: daily_cleanup (ежедневно)")
+    
+    yield  # Приложение работает здесь
+    
+    # Остановка приложения
+    print("🛑 Остановка приложения...")
     scheduler.shutdown()
-    print("🛑 Планировщик остановлен.")
+    print("✅ Планировщик задач остановлен")
+    print("👋 Приложение остановлено")
 
 
-app = FastAPI(lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://158.160.68.214:8000",  
-        "http://localhost:19006",      
-        "http://localhost:8081",       
-        "exp://127.0.0.1:19000",       
-        "*",                           
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+# Создаем приложение FastAPI
+app = FastAPI(
+    title="МАИ Таблетки API",
+    description="API для мобильного приложения управления лекарствами",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
-# Подключаем роутеры
-app.include_router(auth_router)
-app.include_router(friend_router)
-app.include_router(medication_router)
-app.include_router(intake_router)
-app.include_router(sync_router)
+# ==================== CORS НАСТРОЙКИ ====================
+# Критически важно для мобильных приложений!
+
+# Разрешенные источники (origins)
+ALLOWED_ORIGINS = [
+    # Протоколы для Expo/React Native
+    "exp://*",
+    "http://localhost:*",
+    "http://127.0.0.1:*",
+    "http://192.168.*",  # Локальная сеть
+    "http://10.0.2.2:*",  # Android эмулятор
+    "capacitor://localhost",
+    
+    # Ваш VPS
+    "http://158.160.68.214:*",
+    "http://158.160.68.214",
+    
+    # Для разработки - разрешаем все (можно закомментировать в продакшене)
+    "*",
+]
+
+# FastAPI CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,  # Разрешаем куки/авторизацию
+    allow_methods=["*"],  # Разрешаем все HTTP методы
+    allow_headers=["*"],  # Разрешаем все заголовки
+    expose_headers=["*"],  # Делаем все заголовки видимыми для клиента
+    max_age=600,  # Кешировать preflight запросы на 10 минут
+)
 
 
-@app.get("/")
-def read_root():
-    return {"message": "Добро пожаловать в МАИ таблетки!"}
+# ==================== CUSTOM MIDDLEWARE ====================
+@app.middleware("http")
+async def global_cors_middleware(request: Request, call_next):
+    """
+    Глобальный middleware для обработки CORS.
+    Особенно важен для OPTIONS (preflight) запросов.
+    """
+    # Обработка OPTIONS запросов (preflight)
+    if request.method == "OPTIONS":
+        response = JSONResponse(
+            content={"message": "Preflight request handled"},
+            status_code=200
+        )
+    else:
+        # Пропускаем запрос через остальные middleware и роутеры
+        response = await call_next(request)
+    
+    # Добавляем CORS заголовки ко ВСЕМ ответам
+    origin = request.headers.get("origin", "*")
+    
+    response.headers["Access-Control-Allow-Origin"] = origin if origin in ALLOWED_ORIGINS else "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Expose-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "600"
+    
+    return response
 
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+# ==================== ПОДКЛЮЧЕНИЕ РОУТЕРОВ ====================
+app.include_router(auth_router, tags=["Аутентификация"])
+app.include_router(friend_router, tags=["Друзья"])
+app.include_router(medication_router, tags=["Лекарства"])
+app.include_router(intake_router, tags=["Прием лекарств"])
+app.include_router(sync_router, tags=["Синхронизация"])
 
 
+# ==================== ОСНОВНЫЕ ENDPOINTS ====================
+@app.get("/", tags=["Информация"])
+async def read_root():
+    """
+    Корневой endpoint для проверки работы API
+    """
+    return {
+        "message": "Добро пожаловать в API МАИ Таблетки!",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health_check": "/health",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@app.get("/health", tags=["Здоровье"])
+async def health_check():
+    """
+    Health check endpoint для мониторинга
+    """
+    try:
+        # Проверка подключения к БД
+        db_status = "healthy" if await db_helper.check_connection() else "unhealthy"
+        
+        return {
+            "status": "healthy",
+            "database": db_status,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "service": "mai-pills-api",
+            "environment": os.getenv("ENVIRONMENT", "development")
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }, 500
+
+
+@app.get("/test-cors", tags=["Тестирование"])
+async def test_cors(request: Request):
+    """
+    Endpoint для тестирования CORS и проверки подключения
+    """
+    client_ip = request.client.host if request.client else "unknown"
+    
+    return {
+        "status": "success",
+        "message": "CORS работает корректно!",
+        "client_ip": client_ip,
+        "user_agent": request.headers.get("user-agent", "unknown"),
+        "origin": request.headers.get("origin", "not specified"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "cors_test": {
+            "allowed_origins": ALLOWED_ORIGINS,
+            "note": "Если вы видите это сообщение, CORS настроен правильно"
+        }
+    }
+
+
+@app.options("/{path:path}", include_in_schema=False)
+async def options_handler():
+    """
+    Глобальный обработчик OPTIONS запросов для всех путей
+    """
+    return JSONResponse(
+        content={"message": "Preflight OK"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "600"
+        }
+    )
+
+
+# ==================== ОБРАБОТЧИКИ ОШИБОК ====================
+from fastapi import HTTPException
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    Обработчик HTTP исключений
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "path": request.url.path,
+            "method": request.method,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Обработчик ошибок валидации
+    """
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "path": request.url.path,
+            "method": request.method,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """
+    Глобальный обработчик исключений
+    """
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Внутренняя ошибка сервера",
+            "error": str(exc),
+            "path": request.url.path,
+            "method": request.method,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+# ==================== ЗАПУСК СЕРВЕРА ====================
 if __name__ == "__main__":
+    # Параметры запуска
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    reload = os.getenv("RELOAD", "false").lower() == "true"
+    
+    print("=" * 50)
+    print(f"🚀 Запуск сервера МАИ Таблетки")
+    print(f"📡 Host: {host}")
+    print(f"🔌 Port: {port}")
+    print(f"🔄 Reload: {reload}")
+    print(f"🌐 CORS Origins: {ALLOWED_ORIGINS[:3]}...")  # Показываем первые 3
+    print("=" * 50)
+    
+    # Запуск сервера
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-
+        host=host,
+        port=port,
+        reload=reload,
+        log_level="info",
+        access_log=True,
+        timeout_keep_alive=30,
+        # Дополнительные параметры для стабильности
+        loop="asyncio",
+        limit_concurrency=100,
+        limit_max_requests=1000
     )
