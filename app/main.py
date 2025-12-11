@@ -24,9 +24,21 @@ async def lifespan(app: FastAPI):
     """
     print("🚀 Запуск приложения...")
     
-    # Инициализация базы данных
-    await db_helper.init_db()
-    print("✅ База данных инициализирована")
+    # Инициализация базы данных (если метод существует)
+    # УБРАЛИ: await db_helper.init_db() - заменили на проверку подключения
+    try:
+        # Проверяем, есть ли метод init_db
+        if hasattr(db_helper, 'init_db'):
+            await db_helper.init_db()
+            print("✅ База данных инициализирована")
+        else:
+            # Просто проверяем подключение к БД
+            from sqlalchemy import text
+            async with db_helper.session() as session:
+                await session.execute(text("SELECT 1"))
+            print("✅ Подключение к базе данных установлено")
+    except Exception as e:
+        print(f"⚠️ Предупреждение при подключении к БД: {e}")
     
     # Запуск планировщика задач
     scheduler.add_job(
@@ -92,42 +104,37 @@ app.add_middleware(
 )
 
 
-# ==================== CUSTOM MIDDLEWARE ====================
+# ==================== ОБРАБОТКА OPTIONS ЗАПРОСОВ ====================
 @app.middleware("http")
-async def global_cors_middleware(request: Request, call_next):
+async def cors_middleware(request: Request, call_next):
     """
-    Глобальный middleware для обработки CORS.
-    Особенно важен для OPTIONS (preflight) запросов.
+    Middleware для обработки CORS заголовков
     """
-    # Обработка OPTIONS запросов (preflight)
+    # Обработка OPTIONS (preflight) запросов
     if request.method == "OPTIONS":
         response = JSONResponse(
-            content={"message": "Preflight request handled"},
+            content={"message": "Preflight OK"},
             status_code=200
         )
     else:
-        # Пропускаем запрос через остальные middleware и роутеры
         response = await call_next(request)
     
-    # Добавляем CORS заголовки ко ВСЕМ ответам
-    origin = request.headers.get("origin", "*")
-    
-    response.headers["Access-Control-Allow-Origin"] = origin if origin in ALLOWED_ORIGINS else "*"
+    # Добавляем CORS заголовки
+    response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
     response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Expose-Headers"] = "*"
     response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "600"
     
     return response
 
 
 # ==================== ПОДКЛЮЧЕНИЕ РОУТЕРОВ ====================
-app.include_router(auth_router, tags=["Аутентификация"])
-app.include_router(friend_router, tags=["Друзья"])
-app.include_router(medication_router, tags=["Лекарства"])
-app.include_router(intake_router, tags=["Прием лекарств"])
-app.include_router(sync_router, tags=["Синхронизация"])
+app.include_router(auth_router, prefix="/api/v1", tags=["Аутентификация"])
+app.include_router(friend_router, prefix="/api/v1", tags=["Друзья"])
+app.include_router(medication_router, prefix="/api/v1", tags=["Лекарства"])
+app.include_router(intake_router, prefix="/api/v1", tags=["Прием лекарств"])
+app.include_router(sync_router, prefix="/api/v1", tags=["Синхронизация"])
 
 
 # ==================== ОСНОВНЫЕ ENDPOINTS ====================
@@ -152,25 +159,32 @@ async def health_check():
     """
     try:
         # Проверка подключения к БД
-        db_status = "healthy" if await db_helper.check_connection() else "unhealthy"
+        from sqlalchemy import text
+        async with db_helper.session() as session:
+            await session.execute(text("SELECT 1"))
         
         return {
             "status": "healthy",
-            "database": db_status,
+            "database": "connected",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "service": "mai-pills-api",
-            "environment": os.getenv("ENVIRONMENT", "development")
+            "environment": os.getenv("ENVIRONMENT", "development"),
+            "cors_enabled": True,
+            "allowed_origins": ALLOWED_ORIGINS[:3]  # Показываем только первые 3
         }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }, 500
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
 
 
-@app.get("/test-cors", tags=["Тестирование"])
-async def test_cors(request: Request):
+@app.get("/test", tags=["Тестирование"])
+async def test_endpoint(request: Request):
     """
     Endpoint для тестирования CORS и проверки подключения
     """
@@ -178,7 +192,7 @@ async def test_cors(request: Request):
     
     return {
         "status": "success",
-        "message": "CORS работает корректно!",
+        "message": "API работает корректно!",
         "client_ip": client_ip,
         "user_agent": request.headers.get("user-agent", "unknown"),
         "origin": request.headers.get("origin", "not specified"),
@@ -190,26 +204,9 @@ async def test_cors(request: Request):
     }
 
 
-@app.options("/{path:path}", include_in_schema=False)
-async def options_handler():
-    """
-    Глобальный обработчик OPTIONS запросов для всех путей
-    """
-    return JSONResponse(
-        content={"message": "Preflight OK"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "600"
-        }
-    )
-
-
 # ==================== ОБРАБОТЧИКИ ОШИБОК ====================
 from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -223,11 +220,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "path": request.url.path,
             "method": request.method,
             "timestamp": datetime.now(timezone.utc).isoformat()
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
         }
     )
 
@@ -244,11 +236,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "path": request.url.path,
             "method": request.method,
             "timestamp": datetime.now(timezone.utc).isoformat()
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
         }
     )
 
@@ -258,6 +245,10 @@ async def general_exception_handler(request: Request, exc: Exception):
     """
     Глобальный обработчик исключений
     """
+    import traceback
+    print(f"❌ Необработанная ошибка: {exc}")
+    traceback.print_exc()
+    
     return JSONResponse(
         status_code=500,
         content={
@@ -266,11 +257,6 @@ async def general_exception_handler(request: Request, exc: Exception):
             "path": request.url.path,
             "method": request.method,
             "timestamp": datetime.now(timezone.utc).isoformat()
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
         }
     )
 
@@ -287,7 +273,7 @@ if __name__ == "__main__":
     print(f"📡 Host: {host}")
     print(f"🔌 Port: {port}")
     print(f"🔄 Reload: {reload}")
-    print(f"🌐 CORS Origins: {ALLOWED_ORIGINS[:3]}...")  # Показываем первые 3
+    print(f"🌐 CORS Origins: {ALLOWED_ORIGINS}")
     print("=" * 50)
     
     # Запуск сервера
@@ -297,10 +283,5 @@ if __name__ == "__main__":
         port=port,
         reload=reload,
         log_level="info",
-        access_log=True,
-        timeout_keep_alive=30,
-        # Дополнительные параметры для стабильности
-        loop="asyncio",
-        limit_concurrency=100,
-        limit_max_requests=1000
+        access_log=True
     )
